@@ -1,0 +1,33 @@
+# Ignore build artifacts and IDE files
+target/
+*.class
+*.jar
+*.war
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Maven
+.mvn/
+
+# Logs
+*.log
+
+# Kubernetes manifests (not needed in Docker image)
+k8s/
+
+# Documentation
+README.md
