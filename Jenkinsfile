@@ -45,13 +45,13 @@ pipeline {
                     echo "运行单元测试..."
                     mvn test ${MAVEN_OPTS}
                     echo "单元测试完成"
+
+                    echo "测试报告位置: target/surefire-reports/"
+                    if [ -d "target/surefire-reports" ]; then
+                        echo "测试文件列表:"
+                        ls -lh target/surefire-reports/
+                    fi
                 '''
-            }
-            post {
-                always {
-                    // 收集测试报告
-                    junit '**/target/surefire-reports/*.xml'
-                }
             }
         }
 
@@ -144,9 +144,8 @@ pipeline {
             """
         }
         always {
-            echo '===== 清理工作空间 ====='
-            // 保留构建产物，仅清理临时文件
-            cleanWs(deleteDirs: false, patterns: [[pattern: '.m2/repository', type: 'EXCLUDE']])
+            echo '===== Pipeline执行完成 ====='
+            echo "工作空间位置: ${WORKSPACE}"
         }
     }
 }
