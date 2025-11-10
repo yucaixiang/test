@@ -1,21 +1,21 @@
-// 简化版Jenkins Pipeline - 不需要Docker,直接在Kubernetes中部署
-// 适用于Jenkins运行在Kubernetes Pod中的场景
-
 pipeline {
     agent any
 
     environment {
+        // Docker镜像信息
+        DOCKER_IMAGE = 'demo-app'
+        DOCKER_TAG = '1.0.0'
+
         // Kubernetes配置
         K8S_NAMESPACE = 'default'
         K8S_DEPLOYMENT = 'demo-app'
-        APP_IMAGE = 'eclipse-temurin:17-jre-alpine'  // 使用公共镜像运行JAR
 
         // Maven配置
         MAVEN_OPTS = '-Dmaven.repo.local=.m2/repository'
     }
 
     tools {
-        maven 'Maven-3.9'
+        maven 'Maven-3.9'  // 需要在Jenkins中配置Maven工具
     }
 
     stages {
@@ -34,7 +34,6 @@ pipeline {
                     echo "使用Maven进行编译和打包..."
                     mvn clean package -DskipTests ${MAVEN_OPTS}
                     echo "Maven构建完成"
-                    ls -lh target/*.jar
                 '''
             }
         }
@@ -56,23 +55,21 @@ pipeline {
             }
         }
 
-        stage('创建ConfigMap') {
+        stage('Docker镜像构建') {
             steps {
-                echo '===== 创建JAR文件ConfigMap ====='
-                sh '''
-                    echo "将JAR文件打包到ConfigMap..."
+                echo '===== 开始构建Docker镜像 ====='
+                script {
+                    sh """
+                        echo "构建Docker镜像: ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
 
-                    # 删除旧的ConfigMap (如果存在)
-                    kubectl delete configmap demo-app-jar -n ${K8S_NAMESPACE} --ignore-not-found=true
+                        echo "添加latest标签"
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
 
-                    # 创建新的ConfigMap包含JAR文件
-                    kubectl create configmap demo-app-jar \
-                      --from-file=app.jar=target/demo-app.jar \
-                      -n ${K8S_NAMESPACE}
-
-                    echo "ConfigMap创建完成"
-                    kubectl get configmap demo-app-jar -n ${K8S_NAMESPACE}
-                '''
+                        echo "查看构建的镜像"
+                        docker images | grep ${DOCKER_IMAGE}
+                    """
+                }
             }
         }
 
@@ -80,85 +77,13 @@ pipeline {
             steps {
                 echo '===== 开始部署到Kubernetes ====='
                 script {
-                    // 创建临时Deployment配置(使用ConfigMap中的JAR)
-                    sh '''
-                        cat > /tmp/deployment-jar.yaml << 'EOF'
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: demo-app
-  namespace: default
-  labels:
-    app: demo-app
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: demo-app
-  template:
-    metadata:
-      labels:
-        app: demo-app
-    spec:
-      initContainers:
-      - name: copy-jar
-        image: busybox:latest
-        command: ['sh', '-c', 'cp /jar/app.jar /app/app.jar']
-        volumeMounts:
-        - name: jar-volume
-          mountPath: /jar
-        - name: app-volume
-          mountPath: /app
-      containers:
-      - name: demo-app
-        image: eclipse-temurin:17-jre-alpine
-        command: ['java', '-jar', '/app/app.jar']
-        ports:
-        - containerPort: 8080
-          name: http
-        env:
-        - name: NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        resources:
-          requests:
-            memory: "256Mi"
-            cpu: "250m"
-          limits:
-            memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: 8080
-          initialDelaySeconds: 30
-          periodSeconds: 5
-        volumeMounts:
-        - name: app-volume
-          mountPath: /app
-      volumes:
-      - name: jar-volume
-        configMap:
-          name: demo-app-jar
-      - name: app-volume
-        emptyDir: {}
-EOF
+                    sh """
+                        echo "应用Kubernetes配置文件..."
 
-                        echo "应用Deployment配置..."
-                        kubectl apply -f /tmp/deployment-jar.yaml
+                        # 应用Deployment
+                        kubectl apply -f k8s/deployment.yaml
 
-                        echo "应用Service配置..."
+                        # 应用Service
                         kubectl apply -f k8s/service.yaml
 
                         echo "等待部署完成..."
@@ -167,7 +92,7 @@ EOF
                         echo "查看部署状态"
                         kubectl get pods -n ${K8S_NAMESPACE} -l app=${K8S_DEPLOYMENT}
                         kubectl get svc -n ${K8S_NAMESPACE} ${K8S_DEPLOYMENT}
-                    '''
+                    """
                 }
             }
         }
@@ -178,14 +103,14 @@ EOF
                 script {
                     sh """
                         echo "等待服务就绪..."
-                        sleep 30
+                        sleep 20
 
                         echo "获取Service NodePort..."
                         NODE_PORT=\$(kubectl get svc ${K8S_DEPLOYMENT} -n ${K8S_NAMESPACE} -o jsonpath='{.spec.ports[0].nodePort}')
                         echo "Service暴露端口: \${NODE_PORT}"
 
                         echo "测试API端点..."
-                        curl -f http://localhost:\${NODE_PORT}/api/hello || echo "API测试失败，请手动验证"
+                        curl -f http://localhost:\${NODE_PORT}/api/hello || exit 1
 
                         echo "部署验证成功！"
                         echo "访问地址: http://localhost:\${NODE_PORT}/api/hello"
@@ -203,7 +128,6 @@ EOF
             🎉 CI/CD流程执行成功！
 
             应用已成功部署到Kubernetes集群
-            不依赖Docker，直接使用ConfigMap部署JAR文件
 
             访问地址: http://localhost:30088/api/hello
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
