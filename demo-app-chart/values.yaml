@@ -1,0 +1,214 @@
+# Demo App Helm Chart Values
+# This file contains default configuration values for the demo-app deployment
+
+# Replica count for high availability
+replicaCount: 2
+
+# Docker image configuration
+image:
+  # Harbor registry URL and project
+  repository: localhost:30002/demo-app/demo-app
+  # Pull policy - Always ensures latest image is pulled
+  pullPolicy: Always
+  # Tag - defaults to Chart appVersion if not specified
+  tag: "1.0.0"
+
+# Image pull secrets (not needed for public Harbor projects)
+imagePullSecrets: []
+# - name: harbor-secret
+
+# Override chart name
+nameOverride: "demo-app"
+fullnameOverride: "demo-app"
+
+# Service Account configuration
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+# Pod annotations (useful for monitoring)
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
+
+# Pod labels
+podLabels:
+  app: demo-app
+  version: "1.0.0"
+  tier: backend
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: false
+  fsGroup: 1000
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: false
+  runAsUser: 1000
+
+# Service configuration
+service:
+  # NodePort for local development access
+  type: NodePort
+  # Service port
+  port: 8080
+  # Target container port
+  targetPort: 8080
+  # NodePort (30000-32767 range)
+  nodePort: 30088
+  # Protocol
+  protocol: TCP
+
+# Ingress configuration (disabled for NodePort setup)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: demo-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Health check probes for Spring Boot Actuator
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Startup probe (for slow-starting applications)
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 12
+
+# Autoscaling configuration
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Environment variables
+env: []
+# - name: SPRING_PROFILES_ACTIVE
+#   value: "prod"
+# - name: JAVA_OPTS
+#   value: "-Xmx512m -Xms256m"
+
+# Environment variables from ConfigMap
+envFrom: []
+# - configMapRef:
+#     name: demo-app-config
+
+# Additional volumes
+volumes: []
+# - name: config-volume
+#   configMap:
+#     name: demo-app-config
+
+# Additional volume mounts
+volumeMounts: []
+# - name: config-volume
+#   mountPath: /config
+#   readOnly: true
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+# podAntiAffinity:
+#   preferredDuringSchedulingIgnoredDuringExecution:
+#   - weight: 100
+#     podAffinityTerm:
+#       labelSelector:
+#         matchExpressions:
+#         - key: app
+#           operator: In
+#           values:
+#           - demo-app
+#       topologyKey: kubernetes.io/hostname
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  # maxUnavailable: 1
+
+# Network policy
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            app: demo-app
+      ports:
+      - protocol: TCP
+        port: 8080
+
+# Metrics configuration
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    path: /actuator/prometheus
+    port: 8080
+
+# Rolling update strategy
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
