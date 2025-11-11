@@ -18,14 +18,22 @@ spec:
   - name: maven
     image: maven:3.9-eclipse-temurin-17
     command:
-    - sleep
+    - /bin/sh
+    - -c
     args:
-    - "99999"
+    - |
+      while true; do
+        sleep 30
+      done
     workingDir: /home/jenkins/agent
-    tty: true
+    env:
+    - name: HOME
+      value: /home/jenkins/agent
     volumeMounts:
     - name: maven-cache
       mountPath: /root/.m2
+    - name: workspace-volume
+      mountPath: /home/jenkins/agent
     resources:
       requests:
         memory: "1Gi"
@@ -89,6 +97,8 @@ spec:
   - name: maven-cache
     emptyDir: {}
   - name: kaniko-secret
+    emptyDir: {}
+  - name: workspace-volume
     emptyDir: {}
 '''
         }
