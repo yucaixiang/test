@@ -14,9 +14,9 @@ metadata:
 spec:
   serviceAccountName: jenkins
   containers:
-  # Maven容器 - 用于构建Java应用
+  # Maven容器 - 用于构建Java应用 (ARM64兼容)
   - name: maven
-    image: maven:3.9-eclipse-temurin-17-alpine
+    image: maven:3.9-eclipse-temurin-17
     command:
     - cat
     tty: true
