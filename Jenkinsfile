@@ -18,7 +18,10 @@ spec:
   - name: maven
     image: maven:3.9-eclipse-temurin-17
     command:
-    - cat
+    - sleep
+    args:
+    - "99999"
+    workingDir: /home/jenkins/agent
     tty: true
     volumeMounts:
     - name: maven-cache
@@ -52,7 +55,10 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:latest
     command:
-    - cat
+    - sleep
+    args:
+    - "99999"
+    workingDir: /home/jenkins/agent
     tty: true
     resources:
       requests:
@@ -66,7 +72,10 @@ spec:
   - name: helm
     image: alpine/helm:3.13.0
     command:
-    - cat
+    - sleep
+    args:
+    - "99999"
+    workingDir: /home/jenkins/agent
     tty: true
     resources:
       requests:
