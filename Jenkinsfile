@@ -14,26 +14,16 @@ metadata:
 spec:
   serviceAccountName: jenkins
   containers:
-  # Maven容器 - 用于构建Java应用 (ARM64兼容)
+  # Maven容器 - 用于构建Java应用 (ARM64兼容，简化配置)
   - name: maven
     image: maven:3.9-eclipse-temurin-17
     command:
-    - /bin/sh
+    - sh
     - -c
-    args:
-    - |
-      while true; do
-        sleep 30
-      done
-    workingDir: /home/jenkins/agent
-    env:
-    - name: HOME
-      value: /home/jenkins/agent
+    - "while true; do sleep 30; done"
     volumeMounts:
     - name: maven-cache
       mountPath: /root/.m2
-    - name: workspace-volume
-      mountPath: /home/jenkins/agent
     resources:
       requests:
         memory: "1Gi"
@@ -63,11 +53,9 @@ spec:
   - name: kubectl
     image: bitnami/kubectl:latest
     command:
-    - sleep
-    args:
-    - "99999"
-    workingDir: /home/jenkins/agent
-    tty: true
+    - sh
+    - -c
+    - "while true; do sleep 30; done"
     resources:
       requests:
         memory: "128Mi"
@@ -80,11 +68,9 @@ spec:
   - name: helm
     image: alpine/helm:3.13.0
     command:
-    - sleep
-    args:
-    - "99999"
-    workingDir: /home/jenkins/agent
-    tty: true
+    - sh
+    - -c
+    - "while true; do sleep 30; done"
     resources:
       requests:
         memory: "128Mi"
@@ -97,8 +83,6 @@ spec:
   - name: maven-cache
     emptyDir: {}
   - name: kaniko-secret
-    emptyDir: {}
-  - name: workspace-volume
     emptyDir: {}
 '''
         }
