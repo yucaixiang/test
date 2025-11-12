@@ -92,7 +92,7 @@ spec:
                     java -version
                     # 下载Maven到当前workspace
                     if [ ! -d "apache-maven-3.9.5" ]; then
-                        wget -q https://dlcdn.apache.org/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz
+                        curl -L -o apache-maven-3.9.5-bin.tar.gz  https://dlcdn.apache.org/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz
                         tar xzf apache-maven-3.9.5-bin.tar.gz
                         rm apache-maven-3.9.5-bin.tar.gz
                     fi
