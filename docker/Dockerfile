@@ -1,6 +1,6 @@
 FROM openjdk:8u342-oracle
 
-COPY demo-app  /user/local
+COPY demo-app.jar  /user/local
 
 WORKDIR /user/local
 
