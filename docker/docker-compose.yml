@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  # Demo App 主服务
+  demo-app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: demo-app
+    image: demo-app:1.0.0
+    ports:
+      - "8090:8090"
+  
+
