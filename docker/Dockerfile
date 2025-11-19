@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim
+FROM openjdk:8-jdk-alpine
 
 COPY demo-app  /user/local
 
