@@ -1,4 +1,4 @@
-FROM openjdk:8u342-oracle
+FROM openjdk:26-ea-17-trixie
 
 COPY demo-app.jar  /usr/local
 
