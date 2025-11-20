@@ -26,7 +26,7 @@ public class HelloController {
     public Map<String, Object> hello() {
         Map<String, Object> response = new HashMap<>();
         response.put("status", "success");
-        response.put("message", "Hello from Demo App!");
+        response.put("message", "bulid with parameters!");
         response.put("timestamp", getCurrentTime());
         response.put("version", "2.0.0");
         response.put("environment", "Kubernetes");
