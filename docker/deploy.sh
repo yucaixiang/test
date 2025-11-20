@@ -3,6 +3,11 @@
 # Jenkins Docker 部署脚本
 # 解决SSH非交互式会话中的Docker keychain问题
 
+# 修复Jenkins SSH会话的PATH问题
+# Jenkins SSH会话的PATH通常只有 /usr/bin:/bin:/usr/sbin:/sbin
+# 需要添加Docker命令所在的路径
+export PATH="/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+
 # 日志文件配置
 LOG_DIR="/Users/bjsttlp324/Desktop/learn/software/jenkins-data/jars/docker/logs"
 mkdir -p "$LOG_DIR"
